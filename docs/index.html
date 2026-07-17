@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Simple Heart — Search</title>
+<style>
+  :root {
+    --paper: #faf9f5;
+    --ink: #1f1e1a;
+    --ink-soft: #57564e;
+    --rule: #ddd9cd;
+    --moss: #2f4d3a;
+    --moss-soft: #e4ece5;
+    --mark: #f2cf7e;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.5;
+  }
+
+  header {
+    border-bottom: 1px solid var(--rule);
+    padding: 2.5rem 1.5rem 1.75rem;
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--moss);
+    margin: 0 0 0.6rem;
+  }
+
+  h1 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 2rem;
+    margin: 0 0 0.75rem;
+    letter-spacing: -0.01em;
+  }
+
+  .sub {
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+    margin: 0;
+  }
+
+  .search-wrap {
+    max-width: 760px;
+    margin: 1.75rem auto 0;
+    padding: 0 1.5rem;
+  }
+
+  #q {
+    width: 100%;
+    font-family: var(--serif);
+    font-size: 1.3rem;
+    padding: 0.7rem 0.2rem;
+    border: none;
+    border-bottom: 2px solid var(--ink);
+    background: transparent;
+    color: var(--ink);
+    outline: none;
+  }
+  #q::placeholder { color: #a6a397; }
+  #q:focus { border-bottom-color: var(--moss); }
+
+  .filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 0.9rem;
+  }
+
+  .filter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .filter-field label {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  .filter-field select,
+  .filter-field input[type="date"] {
+    font-family: var(--sans);
+    font-size: 0.85rem;
+    color: var(--ink);
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 0.4rem 0.5rem;
+  }
+  .filter-field select:focus,
+  .filter-field input[type="date"]:focus {
+    outline: none;
+    border-color: var(--moss);
+  }
+
+  #clearFilters {
+    align-self: flex-end;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.03em;
+    color: var(--moss);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.4rem 0.2rem;
+    text-decoration: underline;
+  }
+  #clearFilters:hover { color: var(--ink); }
+
+  .meta-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--ink-soft);
+    margin-top: 0.6rem;
+    letter-spacing: 0.02em;
+  }
+
+  main {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 1rem 1.5rem 5rem;
+  }
+
+  .post {
+    border-bottom: 1px solid var(--rule);
+    padding: 1.5rem 0;
+  }
+  .post:first-child { padding-top: 0.5rem; }
+
+  .post-date {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--moss);
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+
+  .post-date .byline {
+    color: var(--ink-soft);
+    text-transform: none;
+  }
+
+  .post h2 {
+    font-family: var(--serif);
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0.35rem 0 0.5rem;
+    line-height: 1.3;
+  }
+
+  .post h2 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .post h2 a:hover { color: var(--moss); text-decoration: underline; }
+
+  .snippet {
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+  }
+
+  .snippet mark {
+    background: var(--mark);
+    color: var(--ink);
+    padding: 0.05em 0.15em;
+    border-radius: 2px;
+  }
+
+  .snippet .divider {
+    color: #c7c3b6;
+    margin: 0 0.3em;
+  }
+
+  .empty, .loading {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    padding: 3rem 0;
+    text-align: center;
+  }
+
+  footer {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 0 1.5rem 3rem;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: #a6a397;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <p class="eyebrow">The Simple Heart — Archive Index</p>
+  <h1>The Simple Heart, searchable</h1>
+  <p class="sub">Every post from blog.simpleheart.org, indexed for full-text search.</p>
+</header>
+
+<div class="search-wrap">
+  <input id="q" type="text" placeholder="Search words or phrases…" autocomplete="off">
+  <div class="filter-row">
+    <div class="filter-field">
+      <label for="authorFilter">Author</label>
+      <select id="authorFilter">
+        <option value="">All authors</option>
+      </select>
+    </div>
+    <div class="filter-field">
+      <label for="dateFrom">From</label>
+      <input type="date" id="dateFrom">
+    </div>
+    <div class="filter-field">
+      <label for="dateTo">To</label>
+      <input type="date" id="dateTo">
+    </div>
+    <button id="clearFilters" type="button">Clear filters</button>
+  </div>
+  <div class="meta-row">
+    <span id="count">loading…</span>
+    <span id="updated"></span>
+  </div>
+</div>
+
+<main id="results">
+  <div class="loading">Loading archive…</div>
+</main>
+
+<footer>Data refreshed automatically. Click any title to read the original post.</footer>
+
+<script>
+let posts = [];
+
+function escapeHtml(s) {
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function highlight(text, query) {
+  if (!query) return escapeHtml(text);
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp("(" + escaped + ")", "ig");
+  return escapeHtml(text).replace(re, "<mark>$1</mark>");
+}
+
+function bestSnippet(body, query, radius = 90) {
+  if (!query) return escapeHtml(body.slice(0, 180)) + "…";
+  const idx = body.toLowerCase().indexOf(query.toLowerCase());
+  if (idx === -1) return escapeHtml(body.slice(0, 180)) + "…";
+  const start = Math.max(0, idx - radius);
+  const end = Math.min(body.length, idx + query.length + radius);
+  let snippet = body.slice(start, end);
+  if (start > 0) snippet = "…" + snippet;
+  if (end < body.length) snippet = snippet + "…";
+  return highlight(snippet, query);
+}
+
+function render() {
+  const resultsEl = document.getElementById("results");
+  const countEl = document.getElementById("count");
+  const q = document.getElementById("q").value.trim();
+  const author = document.getElementById("authorFilter").value;
+  const fromVal = document.getElementById("dateFrom").value;
+  const toVal = document.getElementById("dateTo").value;
+  const from = fromVal ? new Date(fromVal) : null;
+  const to = toVal ? new Date(toVal) : null;
+
+  const qLower = q.toLowerCase();
+  const matches = posts.filter(p => {
+    if (q && !((p.title && p.title.toLowerCase().includes(qLower)) ||
+                (p.body && p.body.toLowerCase().includes(qLower)))) {
+      return false;
+    }
+    if (author && p.author !== author) return false;
+    if ((from || to) && !p._date) return false;
+    if (from && p._date < from) return false;
+    if (to && p._date > to) return false;
+    return true;
+  });
+
+  const filterActive = q || author || from || to;
+  countEl.textContent = filterActive
+    ? `${matches.length} match${matches.length === 1 ? "" : "es"} of ${posts.length} posts`
+    : `${posts.length} posts indexed`;
+
+  if (matches.length === 0) {
+    resultsEl.innerHTML = `<div class="empty">No posts match these filters.</div>`;
+    return;
+  }
+
+  resultsEl.innerHTML = matches.map(p => `
+    <div class="post">
+      <div class="post-date">${escapeHtml(p.date || "")}${p.author ? ` <span class="byline">· by ${escapeHtml(p.author)}</span>` : ""}</div>
+      <h2><a href="${p.url}" target="_blank" rel="noopener">${highlight(p.title || "Untitled", q)}</a></h2>
+      <div class="snippet">${bestSnippet(p.body || "", q)}</div>
+    </div>
+  `).join("");
+}
+
+fetch("posts.json")
+  .then(r => r.json())
+  .then(data => {
+    data.forEach(p => {
+      const d = p.date ? new Date(p.date) : null;
+      p._date = (d && !isNaN(d)) ? d : null;
+    });
+    posts = data.sort((a, b) => (b._date || 0) - (a._date || 0));
+
+    const authors = [...new Set(posts.map(p => p.author).filter(Boolean))].sort();
+    const authorSelect = document.getElementById("authorFilter");
+    authors.forEach(a => {
+      const opt = document.createElement("option");
+      opt.value = a;
+      opt.textContent = a;
+      authorSelect.appendChild(opt);
+    });
+
+    render();
+  })
+  .catch(err => {
+    document.getElementById("results").innerHTML =
+      '<div class="empty">Couldn\'t load posts.json yet — run the scraper workflow first.</div>';
+    console.error(err);
+  });
+
+document.getElementById("q").addEventListener("input", render);
+document.getElementById("authorFilter").addEventListener("change", render);
+document.getElementById("dateFrom").addEventListener("change", render);
+document.getElementById("dateTo").addEventListener("change", render);
+document.getElementById("clearFilters").addEventListener("click", () => {
+  document.getElementById("q").value = "";
+  document.getElementById("authorFilter").value = "";
+  document.getElementById("dateFrom").value = "";
+  document.getElementById("dateTo").value = "";
+  render();
+});
+</script>
+
+</body>
+</html>
