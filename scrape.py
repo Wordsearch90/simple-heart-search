@@ -23,8 +23,18 @@ HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; ArchiveIndexer/1.0)"}
 
 
 def get_all_post_stubs() -> list[dict]:
-    """Page through the archive API to collect every post's basic metadata."""
+    """Page through the archive API to collect every post's basic metadata.
+
+    Note: this only stops on a genuinely EMPTY batch, rather than a batch
+    smaller than the requested `limit`. The API appears to sometimes cap
+    each response below whatever `limit` is requested, which previously
+    caused this to stop after page 1, thinking it had reached the end
+    when there were actually many more posts. Advancing `offset` by the
+    number of items actually received (not the requested limit) avoids
+    skipping or re-fetching posts if the real page size differs.
+    """
     stubs = []
+    seen_slugs = set()
     offset = 0
     limit = 50
     while True:
@@ -34,12 +44,22 @@ def get_all_post_stubs() -> list[dict]:
         batch = resp.json()
         if not batch:
             break
-        stubs.extend(batch)
-        print(f"  fetched {len(stubs)} post stubs so far...")
-        if len(batch) < limit:
+
+        new_in_batch = [s for s in batch if s.get("slug") not in seen_slugs]
+        if not new_in_batch:
+            print(f"  offset {offset}: no new posts in this batch — API may be repeating pages, stopping")
             break
-        offset += limit
+
+        for s in new_in_batch:
+            seen_slugs.add(s.get("slug"))
+        stubs.extend(new_in_batch)
+        print(f"  fetched {len(stubs)} post stubs so far (got {len(batch)} at offset {offset})...")
+        offset += len(batch)
         time.sleep(0.3)
+
+        if len(stubs) > 5000:  # safety valve
+            print("  hit 5000-post safety cap, stopping")
+            break
     return stubs
 
 
